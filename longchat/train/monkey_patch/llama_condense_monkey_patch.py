@@ -14,8 +14,10 @@ class CondenseRotaryEmbedding(torch.nn.Module):
             base = base * ratio ** (dim / (dim-2))
             inv_freq = 1.0 / (base ** (torch.arange(0, dim, 2).float().to(device) / dim))
         elif interpolation_type == 'our':
-            alpha = 1 + (math.log(float(ratio)) / math.log(base)) / ((dim-2) / dim)
-            inv_freq = 1.0 / (base ** (torch.arange(0, dim, 2).float().to(device) / dim * alpha))
+            rang = torch.arange(0, dim, 2).float().to(device) / dim
+            rang_0_to_1 = (rang * dim / (dim-2))
+            rang_0_to_1 = rang_0_to_1 * 0.5 + rang_0_to_1 ** 2 * 0.25 + rang_0_to_1 ** 0.5 * 0.25 #(rang_0_to_1 - 0.5).mul(1).sigmoid() # (1 - (rang_0_to_1 * math.pi).cos()).div(2)
+            inv_freq = 1.0 / (base **  rang * (ratio ** rang_0_to_1))
         else:
             inv_freq = 1.0 / (base ** (torch.arange(0, dim, 2).float().to(device) / dim))
         self.register_buffer("inv_freq", inv_freq)

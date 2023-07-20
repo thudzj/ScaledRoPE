@@ -24,9 +24,9 @@ REPO_DIR = os.path.join(os.path.dirname(HERE), "../")
 
 
 def maybe_monkey_patch(args):
-    if "longchat" in args.model_name_or_path:
+    if "longchat" in args.model_name_or_path or args.interpolation_type is not None:
         from longchat.train.monkey_patch.llama_condense_monkey_patch import replace_llama_with_condense
-        replace_llama_with_condense(args.longchat_ratio)
+        replace_llama_with_condense(args.longchat_ratio, args.interpolation_type)
 
         if args.longchat_flash_attn:
             from longchat.train.monkey_patch.llama_flash_attn_monkey_patch import replace_llama_attn_with_flash_attn

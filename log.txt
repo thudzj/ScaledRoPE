@@ -40,3 +40,13 @@ python3 eval.py --model-name-or-path  lmsys/vicuna-7b-v1.3 --task lines --eval_s
         3.4777e-04, 2.9460e-04, 2.4956e-04, 2.1141e-04, 1.7909e-04, 1.5171e-04,
         1.2851e-04, 1.0887e-04, 9.2222e-05, 7.8123e-05, 6.6179e-05, 5.6062e-05,
         4.7491e-05, 4.0230e-05, 3.4080e-05, 2.8870e-05], dtype=torch.float32)
+
+
+------------------ensemble------------------
+python3 eval.py --model-name-or-path  lmsys/vicuna-7b-v1.3 --task lines --eval_shortest_only --longchat_ratio 4 --interpolation_type ntk --longchat_flash_attn
+
+CUDA_VISIBLE_DEVICES=4 python3 eval.py --model-name-or-path  daryl149/Llama-2-7b-chat-hf --task lines --eval_shortest_only --longchat_ratio 4 --interpolation_type ntk --longchat_flash_attn --random_ratios 1.5 2
+
+-----------mmlu----------
+CUDA_VISIBLE_DEVICES=4 python3 eval.py --model-name-or-path  daryl149/Llama-2-7b-chat-hf --task lines --eval_shortest_only --longchat_ratio 4 --interpolation_type ntk --longchat_flash_attn --random_ratios 1 
+    Average accuracy: 0.458

@@ -10,29 +10,26 @@ from ..utils import rank0_print
 class CondenseRotaryEmbedding(torch.nn.Module):
     def __init__(self, dim, ratio, max_position_embeddings=2048, base=10000, device=None, interpolation_type='linear'):
         super().__init__()
-        if interpolation_type == 'ntk':
-            base = base * ratio ** (dim / (dim-2))
-            inv_freq = 1.0 / (base ** (torch.arange(0, dim, 2).float().to(device) / dim))
-        elif interpolation_type == 'our':
-            rang = torch.arange(0, dim, 2).float().to(device) / dim
-            rang_0_to_1 = (rang * dim / (dim-2))
-            rang_0_to_1 = rang_0_to_1 * 0.4 + rang_0_to_1 ** 1.5 * 0.3 + rang_0_to_1 ** 0.5 * 0.3 ## (1 - (rang_0_to_1 * math.pi).cos()).div(2)
-            # rang_0_to_1 = rang_0_to_1 * 0.4 + rang_0_to_1 ** 1.5 * 0.2 + rang_0_to_1 ** 0.5 * 0.2 + rang_0_to_1 ** 0.2 * 0.2
-            # rang_0_to_1 = (rang_0_to_1 - 0.5).mul(3).sigmoid()
-            # rang_0_to_1 = (rang_0_to_1 - rang_0_to_1.min()) / (rang_0_to_1.max() - rang_0_to_1.min())
-            inv_freq = 1.0 / (base **  rang * (ratio ** rang_0_to_1))
+        self.interpolation_type = interpolation_type
+        self.max_position_embeddings = max_position_embeddings
+        self.dim = dim
+        self.base = base
+        self.device = device
+        self.set_ratio(ratio, self.device)
+    
+    def set_ratio(self, ratio, device):
+        if self.interpolation_type == 'ntk' or self.interpolation_type == 'our':
+            base = self.base * ratio ** (self.dim / (self.dim-2))
+            inv_freq = 1.0 / (base ** (torch.arange(0, self.dim, 2).float().to(device) / self.dim))
         else:
-            inv_freq = 1.0 / (base ** (torch.arange(0, dim, 2).float().to(device) / dim))
+            inv_freq = 1.0 / (self.base ** (torch.arange(0, self.dim, 2).float().to(device) / self.dim))
         self.register_buffer("inv_freq", inv_freq)
         
-        # Build here to make `torch.jit.trace` work.
-        self.ratio = ratio
-        self.interpolation_type = interpolation_type
-        max_position_embeddings = int(max_position_embeddings * ratio)
-        rank0_print(f"Condensing Positional embeddings from {max_position_embeddings} to {int(max_position_embeddings / ratio)}")
+        max_position_embeddings = int(self.max_position_embeddings * ratio)
+        # rank0_print(f"Condensing Positional embeddings from {max_position_embeddings} to {int(max_position_embeddings / ratio)}")
         self.max_seq_len_cached = max_position_embeddings
         t = torch.arange(self.max_seq_len_cached, device=self.inv_freq.device, dtype=self.inv_freq.dtype)
-        if interpolation_type == 'linear':
+        if self.interpolation_type == 'linear':
             t /= ratio
         freqs = torch.einsum("i,j->ij", t, self.inv_freq)
         # Different from paper, but it uses a different permutation in order to obtain the same calculation
